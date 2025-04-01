@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    container_name: easter-game-app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/easter_game
+      - EMAIL_USER=your-email@example.com
+      - EMAIL_PASS=your-email-password
+      - SMTP_HOST=smtp.example.com
+      - SMTP_PORT=587
+      - COMMERCIAL_EMAIL=commercial@yourcompany.com
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/app
+      - /app/node_modules
+
+  postgres:
+    image: postgres:14-alpine
+    container_name: easter-game-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=easter_game
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

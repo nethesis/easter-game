@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gioco di Pasqua</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Caccia alle Uova di Pasqua!</h1>
+            <p>Inserisci la tua Partita IVA per iniziare il gioco e scoprire cosa hai vinto</p>
+        </header>
+
+        <section id="login-section" class="active-section">
+            <div class="form-container">
+                <div class="form-group">
+                    <label for="vat-number">Partita IVA:</label>
+                    <input type="text" id="vat-number" placeholder="Inserisci la tua Partita IVA" required>
+                </div>
+                <button id="validate-btn" class="btn">Verifica e Gioca</button>
+                <div id="error-message" class="error-message"></div>
+            </div>
+        </section>
+
+        <section id="game-section" class="hidden-section">
+            <h2>Benvenuto, <span id="player-name">Giocatore</span>!</h2>
+            <p>Clicca su un uovo per scoprire il tuo premio</p>
+            
+            <div class="game-info">
+                <div id="player-info">
+                    <div class="form-group">
+                        <label for="player-email">La tua Email (per ricevere il premio):</label>
+                        <input type="email" id="player-email" placeholder="La tua email" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="eggs-container">
+                <div class="egg" data-prize="Sconto del 20% sul tuo prossimo acquisto">
+                    <img src="images/egg.png" alt="Uovo di Pasqua">
+                </div>
+                <div class="egg" data-prize="Una consulenza gratuita">
+                    <img src="images/egg.png" alt="Uovo di Pasqua">
+                </div>
+                <div class="egg" data-prize="Un gadget esclusivo">
+                    <img src="images/egg.png" alt="Uovo di Pasqua">
+                </div>
+                <div class="egg" data-prize="Un abbonamento premium di 1 mese">
+                    <img src="images/egg.png" alt="Uovo di Pasqua">
+                </div>
+                <div class="egg" data-prize="Una carta regalo da €50">
+                    <img src="images/egg.png" alt="Uovo di Pasqua">
+                </div>
+            </div>
+        </section>
+
+        <section id="result-section" class="hidden-section">
+            <div class="result-container">
+                <h2>Congratulazioni!</h2>
+                <div class="prize-reveal">
+                    <img src="images/prize.png" alt="Premio" class="prize-image">
+                    <h3>Hai vinto: <span id="prize-name">Un premio</span></h3>
+                </div>
+                <p>Abbiamo inviato i dettagli alla tua email. Il nostro team ti contatterà presto!</p>
+                <div class="thank-you">
+                    <p>Grazie per aver partecipato al nostro gioco di Pasqua!</p>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 Nethesis srl - Gioco di Pasqua</p>
+        </footer>
+    </div>
+
+    <div id="confetti-container"></div>
+
+    <script src="js/confetti.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

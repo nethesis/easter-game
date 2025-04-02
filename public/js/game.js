@@ -121,7 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
                               data.error === 'You have already played' ? 
                               'Hai già giocato' : 
                               'Errore nella registrazione del gioco');
-                    console.log('Here')
                     return;
                 }
                 

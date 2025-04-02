@@ -1,8 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { sendWinnerEmail, sendCommercialEmail } = require('./public/js/email');
-const { Player, sequelize } = require('./models/player');
+const playerService = require('./public/js/players');
 
 // Initialize express app
 const app = express();
@@ -13,10 +14,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Connect to PostgreSQL
-sequelize.sync()
-  .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => console.error('Could not connect to PostgreSQL', err));
+// Ensure data directories exist
+const dataDir = path.join(__dirname, 'data');
+
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir);
+  console.log('Created data directory');
+}
+
+console.log('Using JSON file-based storage');
 
 // Routes
 app.post('/api/validate-vat', async (req, res) => {
@@ -27,7 +33,7 @@ app.post('/api/validate-vat', async (req, res) => {
   }
   
   try {
-    const player = await Player.findOne({ where: { vatNumber } });
+    const player = await playerService.findPlayerByVatNumber(vatNumber);
     
     if (!player) {
       return res.status(404).json({ error: 'VAT Number not authorized to play.' });
@@ -48,32 +54,27 @@ app.post('/api/record-game', async (req, res) => {
   const { vatNumber, prize, playerName, playerEmail } = req.body;
   
   try {
-    console.log('1')
-    const player = await Player.findOne({ where: { vatNumber } });
-    console.log('2')
+    const player = await playerService.findPlayerByVatNumber(vatNumber);
     
     if (!player) {
       return res.status(404).json({ error: 'Unauthorized VAT Number' });
     }
-    console.log('3')
     
     if (player.hasPlayed) {
       return res.status(403).json({ error: 'You have already played' });
     }
-    console.log('4')
     
     // Update player record
     player.hasPlayed = true;
     player.prize = prize;
     player.playedAt = new Date();
-
-    console.log('5')
     
     if (playerEmail) {
       player.email = playerEmail;
     }
     
-    await player.save();
+    // Save player
+    await playerService.savePlayer(player);
     
     // Send emails
     // await sendWinnerEmail(player.email || playerEmail, playerName, prize);
@@ -91,18 +92,23 @@ app.post('/api/admin/add-vat', async (req, res) => {
   const { vatNumber, name, email } = req.body;
   
   try {
-    const existingPlayer = await Player.findOne({ where: { vatNumber } });
+    const existingPlayer = await playerService.findPlayerByVatNumber(vatNumber);
     
     if (existingPlayer) {
       return res.status(400).json({ error: 'VAT Number already exists in the system' });
     }
     
-    await Player.create({
+    const newPlayer = {
       vatNumber,
       name,
       email,
-      hasPlayed: false
-    });
+      hasPlayed: false,
+      prize: null,
+      playedAt: null,
+      createdAt: new Date()
+    };
+    
+    await playerService.savePlayer(newPlayer);
     
     return res.json({ success: true });
   } catch (error) {

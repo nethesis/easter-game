@@ -1,19 +1,38 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async () => {
     // DOM elements
     const validateBtn = document.getElementById('validate-btn');
     const vatNumberInput = document.getElementById('vat-number');
+    const playerNameSpan = document.getElementById('player-name');
+    const playerEmailInput = document.getElementById('player-email');
     const loginSection = document.getElementById('login-section');
     const gameSection = document.getElementById('game-section');
     const resultSection = document.getElementById('result-section');
-    const playerNameSpan = document.getElementById('player-name');
-    const prizeNameSpan = document.getElementById('prize-name');
     const errorMessage = document.getElementById('error-message');
-    const playerEmailInput = document.getElementById('player-email');
-    const eggs = document.querySelectorAll('.egg');
+    const prizeNameSpan = document.getElementById('prize-name');
+    const eggsContainer = document.getElementById('eggs-container');
     
-    // Global variables
+    // Variables
     let currentVatNumber = '';
     let currentPlayerName = '';
+    let eggs = [];
+    let allPrizes = [];
+    
+    // Load prizes from JSON file
+    try {
+        const response = await fetch('/data/prizes.json');
+        const data = await response.json();
+        
+        // Generate all prizes based on quantities
+        allPrizes = generatePrizePool(data.prizes);
+        
+        // Shuffle prizes for randomness
+        shufflePrizes(allPrizes);
+        
+        // Generate eggs
+        generateEggs(allPrizes);
+    } catch (error) {
+        console.error('Failed to load prizes:', error);
+    }
     
     // Event listeners
     validateBtn.addEventListener('click', validateVatNumber);
@@ -23,20 +42,74 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    eggs.forEach(egg => {
-        egg.addEventListener('click', function() {
-            if (!playerEmailInput.value.trim()) {
-                alert('Inserisci la tua email prima di scegliere un uovo');
-                playerEmailInput.focus();
-                return;
-            }
-            
-            const prize = this.getAttribute('data-prize');
-            selectEgg(egg, prize);
-        });
-    });
-    
     // Functions
+    function generatePrizePool(prizesData) {
+        let prizePool = [];
+        
+        prizesData.forEach(prize => {
+            for (let i = 0; i < prize.quantity; i++) {
+                prizePool.push({
+                    id: `${prize.id}-${i+1}`,
+                    name: prize.name,
+                    image: prize.image,
+                    type: prize.type,
+                    originalId: prize.id
+                });
+            }
+        });
+        
+        return prizePool;
+    }
+    
+    function generateEggs(prizes) {
+        // Clear existing eggs
+        eggsContainer.innerHTML = '';
+        
+        // Limit to 100 eggs maximum
+        const maxEggs = Math.min(prizes.length, 100);
+        const displayPrizes = prizes.slice(0, maxEggs);
+        
+        // Create eggs based on prizes
+        displayPrizes.forEach(prize => {
+            const eggDiv = document.createElement('div');
+            eggDiv.className = 'egg';
+            eggDiv.setAttribute('data-prize', prize.name);
+            eggDiv.setAttribute('data-prize-id', prize.id);
+            eggDiv.setAttribute('data-prize-type', prize.type);
+            
+            const eggImg = document.createElement('img');
+            eggImg.src = 'images/egg.png';
+            eggImg.alt = 'Uovo di Pasqua';
+            
+            eggDiv.appendChild(eggImg);
+            eggsContainer.appendChild(eggDiv);
+            
+            // Add click event
+            eggDiv.addEventListener('click', function() {
+                if (!playerEmailInput.value.trim()) {
+                    alert('Inserisci la tua email prima di scegliere un uovo');
+                    playerEmailInput.focus();
+                    return;
+                }
+                
+                const prizeName = this.getAttribute('data-prize');
+                const prizeType = this.getAttribute('data-prize-type');
+                selectEgg(this, prizeName, prizeType);
+            });
+        });
+        
+        // Update eggs variable
+        eggs = document.querySelectorAll('.egg');
+    }
+    
+    function shufflePrizes(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+    
     async function validateVatNumber() {
         const vatNumber = vatNumberInput.value.trim();
         
@@ -58,9 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (!response.ok) {
                 showError(data.error === 'VAT Number not authorized to play.' ? 
-                          'Partita IVA non autorizzata a giocare.' : 
+                          'Errore! Partita Iva inesistente' : 
                           data.error === 'You have already played with this VAT Number.' ? 
-                          'Hai già giocato con questa Partita IVA.' : 
+                          'Errore! Partita Iva già utilizzata' : 
                           'Errore nella verifica della Partita IVA');
                 return;
             }
@@ -85,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    async function selectEgg(eggElement, prize) {
+    async function selectEgg(eggElement, prize, prizeType) {
         // Visual feedback on selection
         eggs.forEach(egg => {
             egg.style.opacity = '0.5';
@@ -96,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Show animation (you can enhance this)
         eggElement.style.transform = 'scale(1.2)';
+        eggElement.classList.add('opening');
         
         setTimeout(async () => {
             // Record game result
@@ -108,6 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         vatNumber: currentVatNumber,
                         prize: prize,
+                        prizeType: prizeType,
                         playerName: currentPlayerName,
                         playerEmail: playerEmailInput.value.trim()
                     })
@@ -126,6 +201,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update UI for result
                 prizeNameSpan.textContent = prize;
+                
+                // Add additional text based on prize type
+                const deliveryInfoElement = document.createElement('p');
+                deliveryInfoElement.className = 'delivery-info';
+                
+                if (prizeType === 'shipping') {
+                    deliveryInfoElement.textContent = 'Ti contatteremo per la spedizione del premio fisico.';
+                } else {
+                    deliveryInfoElement.textContent = 'Riceverai il codice via email entro 24 ore.';
+                }
+                
+                // Insert the delivery info after the prize name
+                const prizeRevealElement = document.querySelector('.prize-reveal');
+                prizeRevealElement.appendChild(deliveryInfoElement);
                 
                 // Show confetti
                 startConfetti();

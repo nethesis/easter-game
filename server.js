@@ -77,8 +77,8 @@ app.post('/api/record-game', async (req, res) => {
     await playerService.savePlayer(player);
     
     // Send emails
-    // await sendWinnerEmail(player.email || playerEmail, playerName, prize);
-    // await sendCommercialEmail(vatNumber, playerName, prize);
+    await sendWinnerEmail(player.email || playerEmail, playerName, prize);
+    await sendCommercialEmail(vatNumber, playerName, prize);
     
     return res.json({ success: true });
   } catch (error) {

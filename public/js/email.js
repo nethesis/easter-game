@@ -2,12 +2,12 @@ const nodemailer = require('nodemailer');
 
 // Configure email transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.example.com',
-  port: process.env.SMTP_PORT || 587,
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
   secure: false,
   auth: {
-    user: process.env.EMAIL_USER || 'your-email@example.com',
-    pass: process.env.EMAIL_PASS || 'your-password'
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   }
 });
 
@@ -20,20 +20,20 @@ async function sendWinnerEmail(email, name, prize) {
 
   try {
     const info = await transporter.sendMail({
-      from: '"Easter Game" <noreply@yourcompany.com>',
+      from: process.env.MAIL_FROM,
       to: email,
-      subject: "Congratulations! You've won an Easter prize!",
+      subject: "Congratulazioni! Hai vinto un premio di Pasqua!",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-          <h1 style="color: #6200ea; text-align: center;">Happy Easter, ${name}!</h1>
-          <p style="font-size: 16px; line-height: 1.5;">Congratulations! You've just won a wonderful prize in our Easter game:</p>
+          <h1 style="color: #6200ea; text-align: center;">Buona Pasqua, ${name}!</h1>
+          <p style="font-size: 16px; line-height: 1.5;">Congratulazioni! Hai appena vinto un fantastico premio nel nostro gioco di Pasqua:</p>
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0;">
             <h2 style="color: #e91e63; margin: 0;">${prize}</h2>
           </div>
-          <p style="font-size: 16px; line-height: 1.5;">Our commercial team will contact you soon with details on how to redeem your prize.</p>
-          <p style="font-size: 16px; line-height: 1.5;">Thank you for participating in our game and Happy Easter!</p>
+          <p style="font-size: 16px; line-height: 1.5;">Il nostro team commerciale ti contatterà presto con i dettagli su come riscattare il tuo premio.</p>
+          <p style="font-size: 16px; line-height: 1.5;">Grazie per aver partecipato al nostro gioco e Buona Pasqua!</p>
           <div style="text-align: center; margin-top: 30px; color: #757575; font-size: 14px;">
-            <p>This is an automated email, please do not reply.</p>
+            <p>Questa è un'email automatica, si prega di non rispondere.</p>
           </div>
         </div>
       `
@@ -49,36 +49,34 @@ async function sendWinnerEmail(email, name, prize) {
 
 // Send email to commercial department
 async function sendCommercialEmail(vatNumber, playerName, prize) {
-  const commercialEmail = process.env.COMMERCIAL_EMAIL || 'commercial@yourcompany.com';
-  
   try {
     const info = await transporter.sendMail({
-      from: '"Easter Game System" <noreply@yourcompany.com>',
-      to: commercialEmail,
-      subject: `New winner: ${playerName} (${vatNumber})`,
+      from: process.env.MAIL_FROM,
+      to: process.env.COMMERCIAL_EMAIL,
+      subject: `Nuovo vincitore: ${playerName} (${vatNumber})`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
-          <h1 style="color: #3f51b5; text-align: center;">New Easter game winner</h1>
-          <p style="font-size: 16px; line-height: 1.5;">A new customer has participated in the Easter game and won a prize:</p>
+          <h1 style="color: #3f51b5; text-align: center;">Nuovo vincitore del gioco di Pasqua</h1>
+          <p style="font-size: 16px; line-height: 1.5;">Un nuovo cliente ha partecipato al gioco di Pasqua e ha vinto un premio:</p>
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
-              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Customer</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Cliente</th>
               <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${playerName}</td>
             </tr>
             <tr>
-              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">VAT Number</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Partita IVA</th>
               <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${vatNumber}</td>
             </tr>
             <tr>
-              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Prize won</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Premio vinto</th>
               <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${prize}</td>
             </tr>
             <tr>
-              <th style="padding: 10px; text-align: left; background-color: #f5f5f5;">Date and time</th>
-              <td style="padding: 10px; text-align: left;">${new Date().toLocaleString('en-US')}</td>
+              <th style="padding: 10px; text-align: left; background-color: #f5f5f5;">Data e ora</th>
+              <td style="padding: 10px; text-align: left;">${new Date().toLocaleString('it-IT')}</td>
             </tr>
           </table>
-          <p style="font-size: 16px; line-height: 1.5;">Please contact the customer to arrange delivery of the prize.</p>
+          <p style="font-size: 16px; line-height: 1.5;">Si prega di contattare il cliente per organizzare la consegna del premio.</p>
         </div>
       `
     });

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const errorMessage = document.getElementById('error-message');
     const prizeNameSpan = document.getElementById('prize-name');
     const eggsContainer = document.getElementById('eggs-container');
+    const title = document.getElementById('title');
     
     // Variables
     let currentVatNumber = '';
@@ -25,7 +26,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // Event listeners
-    validateBtn.addEventListener('click', validateVatNumber);
+    validateBtn.addEventListener('click', () => {
+        const vatNumber = vatNumberInput.value.trim();
+        const playerEmail = playerEmailInput.value.trim();
+
+        if (!vatNumber || !playerEmail) {
+            errorMessage.textContent = 'Inserisci sia la Partita IVA che la tua Email.';
+            return;
+        }
+
+        validateVatNumber();
+    });
+
     vatNumberInput.addEventListener('keypress', function(event) {
         if (event.key === 'Enter') {
             validateVatNumber();
@@ -36,8 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Clear existing eggs
         eggsContainer.innerHTML = '';
 
-        // Generate 20 eggs
-        const maxEggs = 20;
+        // Generate 24 eggs (6x4 layout)
+        const maxEggs = 24;
 
         for (let i = 0; i < maxEggs; i++) {
             const eggDiv = document.createElement('div');
@@ -136,6 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Show game section
             loginSection.classList.remove('active-section');
             loginSection.classList.add('hidden-section');
+            title.classList.add('hidden-section');
             gameSection.classList.remove('hidden-section');
             gameSection.classList.add('active-section');
             

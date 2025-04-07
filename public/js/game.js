@@ -35,24 +35,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     function generateEggs() {
         // Clear existing eggs
         eggsContainer.innerHTML = '';
-        
+
         // Generate 20 eggs
         const maxEggs = 20;
-        
+
         for (let i = 0; i < maxEggs; i++) {
             const eggDiv = document.createElement('div');
             eggDiv.className = 'egg';
             eggDiv.setAttribute('data-egg-id', `egg-${i + 1}`);
-            
+
             const eggImg = document.createElement('img');
-            eggImg.src = 'images/egg.png';
+            eggImg.src = 'images/egg_closed.svg';
             eggImg.alt = 'Uovo di Pasqua';
-            
+
             eggDiv.appendChild(eggImg);
             eggsContainer.appendChild(eggDiv);
-            
+
             // Add click event
-            eggDiv.addEventListener('click', async function() {
+            eggDiv.addEventListener('click', async function () {
                 if (!playerEmailInput.value.trim()) {
                     alert('Inserisci la tua email prima di scegliere un uovo');
                     playerEmailInput.focus();
@@ -60,26 +60,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 try {
-                    // Effettua una richiesta all'API per calcolare il premio
-                    const response = await fetch('/api/calculate-prize');
-                    const data = await response.json();
+                    eggDiv.classList.add('shaking');
 
-                    if (!response.ok) {
-                        showError(data.message || 'Errore nel calcolo del premio');
-                        return;
-                    }
+                    setTimeout(async () => {
+                        eggImg.src = 'images/egg_opened.svg';
 
-                    const prize = data.prize;
+                        const response = await fetch('/api/calculate-prize');
+                        const data = await response.json();
 
-                    // Usa i dettagli del premio
-                    await selectEgg(eggDiv, prize);
+                        if (!response.ok) {
+                            showError(data.message || 'Errore nel calcolo del premio');
+                            eggImg.src = 'images/egg_closed.svg';
+                            return;
+                        }
+
+                        const prize = data.prize;
+
+                        await selectEgg(eggDiv, prize);
+                    }, 1500);
                 } catch (error) {
                     console.error('Errore nella richiesta del premio:', error);
                     showError('Si è verificato un errore. Riprova più tardi.');
+                    eggImg.src = 'images/egg_closed.svg';
                 }
             });
         }
-        
+
         // Update eggs variable
         eggs = document.querySelectorAll('.egg');
     }

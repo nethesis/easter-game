@@ -157,7 +157,7 @@ input[type="email"]:focus {
     position: relative;
     width: 80px;
     height: 110px;
-    cursor: pointer;
+    cursor: url('../images/hammer.png'), auto;
     transition: all 0.3s ease;
     display: flex;
     justify-content: center;
@@ -169,30 +169,37 @@ input[type="email"]:focus {
     z-index: 2;
 }
 
-.egg.opening {
-    animation: wobble 1s ease;
+.egg.shaking {
+    animation: shake 1.0s ease-in-out;
 }
 
-@keyframes wobble {
-    0% { transform: scale(1.2) rotate(0deg); }
-    25% { transform: scale(1.2) rotate(-5deg); }
-    50% { transform: scale(1.2) rotate(5deg); }
-    75% { transform: scale(1.2) rotate(-5deg); }
-    100% { transform: scale(1.2) rotate(0deg); }
+@keyframes shake {
+    0% { transform: translateX(0); }
+    15% { transform: translateX(-8px); }
+    30% { transform: translateX(8px); }
+    45% { transform: translateX(-6px); }
+    60% { transform: translateX(6px); }
+    75% { transform: translateX(-4px); }
+    90% { transform: translateX(4px); }
+    100% { transform: translateX(0); }
 }
 
 .egg img {
     max-width: 100%;
     max-height: 100%;
-    transition: all 0.5s ease;
+    transition: transform 0.5s ease, opacity 0.5s ease;
 }
 
-.egg:hover {
+.egg:hover img {
     transform: scale(1.05);
 }
 
 .egg:active img {
     transform: scale(0.95);
+}
+
+.egg.opening img {
+    opacity: 0.8; /* Optional: Add a slight fade effect during transition */
 }
 
 /* Result Section */

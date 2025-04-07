@@ -15,21 +15,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentVatNumber = '';
     let currentPlayerName = '';
     let eggs = [];
-    let allPrizes = [];
     
     // Load prizes from JSON file
-    try {
-        const response = await fetch('/data/prizes.json');
-        const data = await response.json();
-        
-        // Generate all prizes based on quantities
-        allPrizes = generatePrizePool(data.prizes);
-        
-        // Shuffle prizes for randomness
-        shufflePrizes(allPrizes);
-        
+    try {        
         // Generate eggs
-        generateEggs(allPrizes);
+        generateEggs();
     } catch (error) {
         console.error('Failed to load prizes:', error);
     }
@@ -42,40 +32,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
     
-    // Functions
-    function generatePrizePool(prizesData) {
-        let prizePool = [];
-        
-        prizesData.forEach(prize => {
-            for (let i = 0; i < prize.quantity; i++) {
-                prizePool.push({
-                    id: `${prize.id}-${i+1}`,
-                    name: prize.name,
-                    image: prize.image,
-                    type: prize.type,
-                    originalId: prize.id
-                });
-            }
-        });
-        
-        return prizePool;
-    }
-    
-    function generateEggs(prizes) {
+    function generateEggs() {
         // Clear existing eggs
         eggsContainer.innerHTML = '';
         
-        // Limit to 100 eggs maximum
-        const maxEggs = Math.min(prizes.length, 100);
-        const displayPrizes = prizes.slice(0, maxEggs);
+        // Generate 20 eggs
+        const maxEggs = 20;
         
-        // Create eggs based on prizes
-        displayPrizes.forEach(prize => {
+        for (let i = 0; i < maxEggs; i++) {
             const eggDiv = document.createElement('div');
             eggDiv.className = 'egg';
-            eggDiv.setAttribute('data-prize', prize.name);
-            eggDiv.setAttribute('data-prize-id', prize.id);
-            eggDiv.setAttribute('data-prize-type', prize.type);
+            eggDiv.setAttribute('data-egg-id', `egg-${i + 1}`);
             
             const eggImg = document.createElement('img');
             eggImg.src = 'images/egg.png';
@@ -85,29 +52,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             eggsContainer.appendChild(eggDiv);
             
             // Add click event
-            eggDiv.addEventListener('click', function() {
+            eggDiv.addEventListener('click', async function() {
                 if (!playerEmailInput.value.trim()) {
                     alert('Inserisci la tua email prima di scegliere un uovo');
                     playerEmailInput.focus();
                     return;
                 }
-                
-                const prizeName = this.getAttribute('data-prize');
-                const prizeType = this.getAttribute('data-prize-type');
-                selectEgg(this, prizeName, prizeType);
+
+                try {
+                    // Effettua una richiesta all'API per calcolare il premio
+                    const response = await fetch('/api/calculate-prize');
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        showError(data.message || 'Errore nel calcolo del premio');
+                        return;
+                    }
+
+                    const prize = data.prize;
+
+                    // Usa i dettagli del premio
+                    await selectEgg(eggDiv, prize);
+                } catch (error) {
+                    console.error('Errore nella richiesta del premio:', error);
+                    showError('Si è verificato un errore. Riprova più tardi.');
+                }
             });
-        });
+        }
         
         // Update eggs variable
         eggs = document.querySelectorAll('.egg');
-    }
-    
-    function shufflePrizes(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-        return array;
     }
     
     async function validateVatNumber() {
@@ -158,7 +132,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    async function selectEgg(eggElement, prize, prizeType) {
+    async function selectEgg(eggElement, prize ) {
         // Visual feedback on selection
         eggs.forEach(egg => {
             egg.style.opacity = '0.5';
@@ -182,7 +156,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     body: JSON.stringify({
                         vatNumber: currentVatNumber,
                         prize: prize,
-                        prizeType: prizeType,
                         playerName: currentPlayerName,
                         playerEmail: playerEmailInput.value.trim()
                     })
@@ -205,12 +178,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Add additional text based on prize type
                 const deliveryInfoElement = document.createElement('p');
                 deliveryInfoElement.className = 'delivery-info';
-                
-                if (prizeType === 'shipping') {
-                    deliveryInfoElement.textContent = 'Ti contatteremo per la spedizione del premio fisico.';
-                } else {
-                    deliveryInfoElement.textContent = 'Riceverai il codice via email entro 24 ore.';
-                }
                 
                 // Insert the delivery info after the prize name
                 const prizeRevealElement = document.querySelector('.prize-reveal');

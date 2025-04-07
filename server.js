@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { sendWinnerEmail, sendCommercialEmail } = require('./public/js/email');
 const playerService = require('./public/js/players');
+const { calculatePrize } = require('./public/js/prizes');
 
 // Initialize express app
 const app = express();
@@ -50,6 +51,7 @@ app.post('/api/validate-vat', async (req, res) => {
   }
 });
 
+// Route to record game result
 app.post('/api/record-game', async (req, res) => {
   const { vatNumber, prize, playerName, playerEmail } = req.body;
   
@@ -115,6 +117,21 @@ app.post('/api/admin/add-vat', async (req, res) => {
     console.error('Error adding VAT number', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
+});
+
+// Route to calculate prize
+app.get('/api/calculate-prize', (req, res) => {
+    try {
+        const prize = calculatePrize();
+        if (prize) {
+            res.json({ success: true, prize: prize.name });
+        } else {
+            res.status(404).json({ success: false, message: 'No prize available' });
+        }
+    } catch (error) {
+        console.error('Error calculating prize:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
 });
 
 // Start server

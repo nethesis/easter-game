@@ -120,9 +120,10 @@ app.post('/api/admin/add-vat', async (req, res) => {
 });
 
 // Route to calculate prize
-app.get('/api/calculate-prize', (req, res) => {
+app.get('/api/calculate-prize', async (req, res) => {
     try {
-        const prize = calculatePrize();
+        const prize = await calculatePrize();
+        
         if (prize) {
             res.json({ success: true, prize: prize.name });
         } else {

@@ -62,22 +62,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     eggDiv.classList.add('shaking');
 
+                    const prizeRequest = fetch('/api/calculate-prize').then(response => response.json());
+
                     setTimeout(async () => {
                         eggImg.src = 'images/egg_opened.svg';
 
-                        const response = await fetch('/api/calculate-prize');
-                        const data = await response.json();
+                        try {
+                            const data = await prizeRequest;
 
-                        if (!response.ok) {
-                            showError(data.message || 'Errore nel calcolo del premio');
+                            if (!data || !data.prize) {
+                                showError(data.message || 'Errore nel calcolo del premio');
+                                eggImg.src = 'images/egg_closed.svg';
+                                return;
+                            }
+
+                            const prize = data.prize;
+
+                            await selectEgg(eggDiv, prize);
+                        } catch (error) {
+                            console.error('Errore nella richiesta del premio:', error);
+                            showError('Si è verificato un errore. Riprova più tardi.');
                             eggImg.src = 'images/egg_closed.svg';
-                            return;
                         }
-
-                        const prize = data.prize;
-
-                        await selectEgg(eggDiv, prize);
-                    }, 1500);
+                    }, 1200);
                 } catch (error) {
                     console.error('Errore nella richiesta del premio:', error);
                     showError('Si è verificato un errore. Riprova più tardi.');
@@ -138,70 +145,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
     
-    async function selectEgg(eggElement, prize ) {
+    async function selectEgg(eggElement, prize) {
         // Visual feedback on selection
         eggs.forEach(egg => {
             egg.style.opacity = '0.5';
             egg.style.pointerEvents = 'none';
         });
-        
+
         eggElement.style.opacity = '1';
-        
+
         // Show animation (you can enhance this)
         eggElement.style.transform = 'scale(1.2)';
         eggElement.classList.add('opening');
-        
-        setTimeout(async () => {
-            // Record game result
-            try {
-                const response = await fetch('/api/record-game', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        vatNumber: currentVatNumber,
-                        prize: prize,
-                        playerName: currentPlayerName,
-                        playerEmail: playerEmailInput.value.trim()
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    showError(data.error === 'Unauthorized VAT Number' ? 
-                              'Partita IVA non autorizzata' : 
-                              data.error === 'You have already played' ? 
-                              'Hai già giocato' : 
-                              'Errore nella registrazione del gioco');
-                    return;
-                }
-                
-                // Update UI for result
-                prizeNameSpan.textContent = prize;
-                
-                // Add additional text based on prize type
-                const deliveryInfoElement = document.createElement('p');
-                deliveryInfoElement.className = 'delivery-info';
-                
-                // Insert the delivery info after the prize name
-                const prizeRevealElement = document.querySelector('.prize-reveal');
-                prizeRevealElement.appendChild(deliveryInfoElement);
-                
-                // Show confetti
-                startConfetti();
-                
-                // Show result section
-                gameSection.classList.remove('active-section');
-                gameSection.classList.add('hidden-section');
-                resultSection.classList.remove('hidden-section');
-                resultSection.classList.add('active-section');
-                
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Si è verificato un errore di connessione. Riprova più tardi.');
-            }
+
+        setTimeout(() => {
+            // Update UI for result immediately
+            prizeNameSpan.textContent = prize;
+
+            // Add additional text based on prize type
+            const deliveryInfoElement = document.createElement('p');
+            deliveryInfoElement.className = 'delivery-info';
+
+            // Insert the delivery info after the prize name
+            const prizeRevealElement = document.querySelector('.prize-reveal');
+            prizeRevealElement.appendChild(deliveryInfoElement);
+
+            // Show confetti
+            startConfetti();
+
+            // Show result section
+            gameSection.classList.remove('active-section');
+            gameSection.classList.add('hidden-section');
+            resultSection.classList.remove('hidden-section');
+            resultSection.classList.add('active-section');
+
+            // Record game result in the background
+            fetch('/api/record-game', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    vatNumber: currentVatNumber,
+                    prize: prize,
+                    playerName: currentPlayerName,
+                    playerEmail: playerEmailInput.value.trim()
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (!response.ok) {
+                      console.error('Errore nella registrazione del gioco:', data.error);
+                  }
+              })
+              .catch(error => {
+                  console.error('Errore di connessione durante la registrazione del gioco:', error);
+              });
         }, 1000);
     }
     

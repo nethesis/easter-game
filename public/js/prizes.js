@@ -1,17 +1,31 @@
-const fs = require('fs');
+const AWS = require('aws-sdk');
 const path = require('path');
 
-const calculatePrize = () => {
-    const filePath = path.join(__dirname, '../data/prizes.jsonl');
-    const prizes = fs.readFileSync(filePath, 'utf-8')
-        .split('\n')
-        .filter(line => line.trim() !== '')
-        .map(line => JSON.parse(line));
+// S3 client configuration
+const s3 = new AWS.S3({
+  accessKeyId: process.env.DO_ACCESS_KEY,
+  secretAccessKey: process.env.DO_SECRET_KEY,
+  endpoint: process.env.DO_ENDPOINT,
+  region: process.env.DO_REGION,
+  s3ForcePathStyle: true
+});
+
+const BUCKET_NAME = process.env.DO_BUCKET_NAME;
+const PRIZES_JSONL_FILE = 'prizes.jsonl';
+
+const calculatePrize = async () => {
+  try {
+    // Fetch prizes.jsonl from the bucket
+    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: PRIZES_JSONL_FILE }).promise();
+    const prizes = data.Body.toString('utf-8')
+      .split('\n')
+      .filter(line => line.trim() !== '')
+      .map(line => JSON.parse(line));
 
     // Filter prizes: always include those without max and used, and check used < max for others
     const availablePrizes = prizes.filter(prize => 
-        (!('max' in prize) && !('used' in prize)) || 
-        (typeof prize.max === 'number' && typeof prize.used === 'number' && prize.used < prize.max)
+      (!('max' in prize) && !('used' in prize)) || 
+      (typeof prize.max === 'number' && typeof prize.used === 'number' && prize.used < prize.max)
     );
 
     // Calculate total probability, ignoring prizes without the probability field
@@ -23,26 +37,31 @@ const calculatePrize = () => {
     // Determine the winning prize
     let cumulativeProbability = 0;
     for (const prize of availablePrizes) {
-        cumulativeProbability += prize.probability || 0; // Use 0 if probability is not defined
-        if (random <= cumulativeProbability) {
-            // Increment the used value only if max and used are defined
-            if (typeof prize.max === 'number' && typeof prize.used === 'number') {
-                prize.used += 1;
+      cumulativeProbability += prize.probability || 0; // Use 0 if probability is not defined
+      if (random <= cumulativeProbability) {
+        // Increment the used value only if max and used are defined
+        if (typeof prize.max === 'number' && typeof prize.used === 'number') {
+          prize.used += 1;
 
-                // Update the prizes.jsonl file
-                const updatedPrizes = prizes.map(p => (p.id === prize.id ? prize : p));
-                fs.writeFileSync(
-                    filePath,
-                    updatedPrizes.map(p => JSON.stringify(p)).join('\n'),
-                    'utf-8'
-                );
-            }
-
-            return prize;
+          // Update the prizes.jsonl file in the bucket
+          const updatedPrizes = prizes.map(p => (p.id === prize.id ? prize : p));
+          await s3.putObject({
+            Bucket: BUCKET_NAME,
+            Key: PRIZES_JSONL_FILE,
+            Body: updatedPrizes.map(p => JSON.stringify(p)).join('\n'),
+            ContentType: 'application/jsonl'
+          }).promise();
         }
+
+        return prize;
+      }
     }
 
     return null; // No prize won
-}
+  } catch (error) {
+    console.error('Error accessing prizes.jsonl:', error);
+    throw error;
+  }
+};
 
 module.exports = { calculatePrize };

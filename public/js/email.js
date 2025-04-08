@@ -48,7 +48,7 @@ async function sendWinnerEmail(email, name, prize) {
 }
 
 // Send email to commercial department
-async function sendCommercialEmail(vatNumber, playerName, prize) {
+async function sendCommercialEmail(vatNumber, playerName, prize, playerEmail) {
   try {
     const info = await transporter.sendMail({
       from: process.env.MAIL_FROM,
@@ -66,6 +66,10 @@ async function sendCommercialEmail(vatNumber, playerName, prize) {
             <tr>
               <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Partita IVA</th>
               <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${vatNumber}</td>
+            </tr>
+            <tr>
+              <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Email</th>
+              <td style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">${playerEmail}</td>
             </tr>
             <tr>
               <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd; background-color: #f5f5f5;">Premio vinto</th>

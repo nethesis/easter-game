@@ -80,7 +80,7 @@ app.post('/api/record-game', async (req, res) => {
     
     // Send emails
     await sendWinnerEmail(player.email || playerEmail, playerName, prize);
-    await sendCommercialEmail(vatNumber, playerName, prize);
+    await sendCommercialEmail(vatNumber, playerName, prize, playerEmail);
     
     return res.json({ success: true });
   } catch (error) {

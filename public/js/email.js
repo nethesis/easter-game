@@ -39,7 +39,6 @@ async function sendWinnerEmail(email, name, prize) {
       `
     });
     
-    console.log('Winner email sent:', info.messageId);
     return info;
   } catch (error) {
     console.error('Error sending winner email:', error);
@@ -85,7 +84,6 @@ async function sendCommercialEmail(vatNumber, playerName, prize, playerEmail) {
       `
     });
     
-    console.log('Commercial email sent:', info.messageId);
     return info;
   } catch (error) {
     console.error('Error sending commercial email:', error);

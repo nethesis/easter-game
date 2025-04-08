@@ -30,8 +30,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const vatNumber = vatNumberInput.value.trim();
         const playerEmail = playerEmailInput.value.trim();
 
+        // Email validation
+        const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
         if (!vatNumber || !playerEmail) {
             errorMessage.textContent = 'Inserisci sia la Partita IVA che la tua Email.';
+            return;
+        }
+        if (!emailPattern.test(playerEmail)) {
+            errorMessage.textContent = 'Inserisci un\'email valida.';
             return;
         }
 

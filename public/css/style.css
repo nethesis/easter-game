@@ -122,7 +122,7 @@ input[type="email"]:focus {
     display: grid;
     grid-template-columns: repeat(6, 1fr); /* 5 columns */
     grid-template-rows: repeat(4, auto);  /* 5 rows */
-    gap: 10px; /* Reduce gap between eggs */
+    gap: 0px 10px; /* Reduce gap between eggs */
     margin: 30px auto;
     max-width: 800px;
     justify-content: center;
@@ -252,34 +252,49 @@ footer {
 /* Responsive */
 @media (max-width: 768px) {
     .eggs-container {
-        gap: 15px;
+        grid-template-columns: repeat(4, 1fr); /* Adjust to 4 columns */
+        gap: 10px;
     }
     
     .egg {
-        width: 120px;
-        height: 160px;
+        width: 80px; /* Reduce egg width */
+        height: 110px; /* Reduce egg height */
     }
     
-    header h1 {
-        font-size: 2em;
+    .title h1 {
+        font-size: 2em; /* Adjust title size */
     }
 }
 
 @media (max-width: 480px) {
     .eggs-container {
-        gap: 10px;
+        grid-template-columns: repeat(2, 1fr); /* Adjust to 2 columns */
+        gap: 8px;
     }
     
     .egg {
-        width: 100px;
-        height: 140px;
+        width: 70px; /* Further reduce egg width */
+        height: 100px; /* Further reduce egg height */
     }
     
     section {
-        padding: 20px;
+        padding: 15px;
     }
     
-    header h1 {
-        font-size: 1.8em;
+    .title h1 {
+        font-size: 1.5em; /* Further adjust title size */
+    }
+    
+    .form-container {
+        padding: 10px;
+    }
+    
+    input[type="text"],
+    input[type="email"] {
+        font-size: 0.9em; /* Adjust input font size */
+    }
+    
+    .btn {
+        font-size: 0.9em; /* Adjust button font size */
     }
 }

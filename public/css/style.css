@@ -199,8 +199,7 @@ input[type="email"]:focus {
 }
 
 .prize-image {
-    width: 300px;
-    margin-bottom: 20px;
+    width: 200px;
 }
 
 .prize-reveal h3 {

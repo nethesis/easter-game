@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             const data = await prizeRequest;
 
                             if (!data || !data.prize) {
-                                showError(data.message || 'Errore nel calcolo del premio');
+                                showError(data.message || 'Errore nel calcolo del regalo');
                                 eggImg.src = 'images/egg_closed.svg';
                                 return;
                             }
@@ -98,13 +98,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                             await selectEgg(eggDiv, prize);
                         } catch (error) {
-                            console.error('Errore nella richiesta del premio:', error);
+                            console.error('Errore nella richiesta del regalo:', error);
                             showError('Si è verificato un errore. Riprova più tardi.');
                             eggImg.src = 'images/egg_closed.svg';
                         }
                     }, 1200);
                 } catch (error) {
-                    console.error('Errore nella richiesta del premio:', error);
+                    console.error('Errore nella richiesta del regalo:', error);
                     showError('Si è verificato un errore. Riprova più tardi.');
                     eggImg.src = 'images/egg_closed.svg';
                 }

@@ -80,7 +80,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     eggDiv.classList.add('shaking');
 
-                    const prizeRequest = fetch('/api/calculate-prize').then(response => response.json());
+                    const prizeRequest = fetch(`/api/calculate-prize?vatNumber=${encodeURIComponent(currentVatNumber)}&playerName=${encodeURIComponent(currentPlayerName)}`)
+                        .then(response => response.json());
 
                     setTimeout(async () => {
                         eggImg.src = 'images/egg_opened.svg';

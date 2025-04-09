@@ -98,15 +98,16 @@ const getAllActivePlayers = async () => {
 // Find a player by VAT number using the cached players data
 const findPlayerByVatNumber = async (vatNumber) => {
   try {
-    const activePlayers = await getAllActivePlayers();
-    const activePlayer = activePlayers.find(player => player.vatNumber === vatNumber);
-
-    if (activePlayer) {
-      return activePlayer;
-    }
-
     const player = playersCache.find(player => player.piva === vatNumber);
+
     if (player) {
+      const activePlayers = await getAllActivePlayers();
+      const activePlayer = activePlayers.find(player => player.vatNumber === vatNumber);
+
+      if (activePlayer) {
+        return activePlayer;
+      }
+
       return {
         vatNumber: player.piva,
         name: player.partner.trim(),

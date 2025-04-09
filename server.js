@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
 const { sendWinnerEmail, sendCommercialEmail } = require('./private/js/email');
 const playerService = require('./private/js/players');
-const { calculatePrize } = require('./private/js/prizes');
+const { calculatePrize, getPrizes } = require('./private/js/prizes');
 
 // Initialize express app
 const app = express();
@@ -16,7 +15,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log(`${req.method} ${req.url}`);
   next();
 });
 
@@ -32,11 +31,11 @@ app.post('/api/validate-vat', async (req, res) => {
     const player = await playerService.findPlayerByVatNumber(vatNumber);
     
     if (!player) {
-      return res.status(404).json({ error: 'VAT Number not authorized to play.' });
+      return res.status(404).json({ error: 'VAT Number not authorized to play' });
     }
     
     if (player.hasPlayed) {
-      return res.status(403).json({ error: 'You have already played with this VAT Number.' });
+      return res.status(403).json({ error: 'You have already played with this VAT Number' });
     }
     
     return res.json({ success: true, playerName: player.name });
@@ -49,34 +48,43 @@ app.post('/api/validate-vat', async (req, res) => {
 // Route to record game result
 app.post('/api/record-game', async (req, res) => {
   const { vatNumber, prize, playerName, playerEmail } = req.body;
-  
+
+  // Validate input fields
+  if (!vatNumber || !prize || !playerName || !playerEmail) {
+    return res.status(400).json({ error: 'Incomplete input data' });
+  }
+
   try {
     const player = await playerService.findPlayerByVatNumber(vatNumber);
-    
-    if (!player) {
-      return res.status(404).json({ error: 'Unauthorized VAT Number' });
+
+    // Validate prize
+    const validPrizes = await getPrizes();
+    const prizeExists = validPrizes.find(p => p.name === prize);
+
+    if (!player || player.name !== playerName || !prizeExists) {
+      return res.status(404).json({ error: 'Invalid input data' });
     }
-    
+
     if (player.hasPlayed) {
       return res.status(403).json({ error: 'You have already played' });
     }
-    
+
     // Update player record
     player.hasPlayed = true;
     player.prize = prize;
     player.playedAt = new Date();
-    
+
     if (playerEmail) {
       player.email = playerEmail;
     }
-    
+
     // Save player
     await playerService.savePlayer(player);
-    
+
     // Send emails
     await sendWinnerEmail(player.email || playerEmail, playerName, prize);
     await sendCommercialEmail(vatNumber, playerName, prize, playerEmail);
-    
+
     return res.json({ success: true });
   } catch (error) {
     console.error('Error recording game', error);
@@ -84,41 +92,27 @@ app.post('/api/record-game', async (req, res) => {
   }
 });
 
-// Admin route to add authorized VAT numbers
-app.post('/api/add-vat', async (req, res) => {
-  const { vatNumber, name, email } = req.body;
-  
-  try {
-    const existingPlayer = await playerService.findPlayerByVatNumber(vatNumber);
-    
-    if (existingPlayer) {
-      return res.status(400).json({ error: 'VAT Number already exists in the system' });
-    }
-    
-    const newPlayer = {
-      vatNumber,
-      name,
-      email,
-      hasPlayed: false,
-      prize: null,
-      playedAt: null,
-      createdAt: new Date()
-    };
-    
-    await playerService.savePlayer(newPlayer);
-    
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('Error adding VAT number', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // Route to calculate prize
 app.get('/api/calculate-prize', async (req, res) => {
+    const { vatNumber, playerName } = req.query;
+
+    if (!vatNumber || !playerName) {
+        return res.status(400).json({ success: false, message: 'Incomplete input data' });
+    }
+
     try {
+        const player = await playerService.findPlayerByVatNumber(vatNumber);
+
+        if (!player || player.name !== playerName) {
+            return res.status(403).json({ success: false, message: 'Invalid input data' });
+        }
+
+        if (player.hasPlayed) {
+            return res.status(403).json({ success: false, message: 'You have already played' });
+        }
+
         const prize = await calculatePrize();
-        
+
         if (prize) {
             res.json({ success: true, prize: prize.name });
         } else {

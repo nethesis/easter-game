@@ -20,16 +20,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ensure data directories exist
-const dataDir = path.join(__dirname, 'data');
-
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
-  console.log('Created data directory');
-}
-
-console.log('Using JSON file-based storage');
-
 // Routes
 app.post('/api/validate-vat', async (req, res) => {
   const { vatNumber } = req.body;
@@ -142,5 +132,10 @@ app.get('/api/calculate-prize', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
+  console.log('========================================');
+  console.log('Application logs start here');
+  console.log('========================================');
+  console.log('')
   console.log(`Server running on port ${PORT}`);
+  console.log('')
 });

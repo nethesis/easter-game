@@ -1,13 +1,15 @@
-const AWS = require('aws-sdk');
-const readline = require('readline');
+const { S3Client, HeadObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
 
 // S3 client configuration
-const s3 = new AWS.S3({
-  accessKeyId: process.env.DO_ACCESS_KEY,
-  secretAccessKey: process.env.DO_SECRET_KEY,
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: process.env.DO_ACCESS_KEY,
+    secretAccessKey: process.env.DO_SECRET_KEY
+  },
   endpoint: process.env.DO_ENDPOINT,
   region: process.env.DO_REGION,
-  s3ForcePathStyle: true
+  forcePathStyle: true
 });
 
 const BUCKET_NAME = process.env.DO_BUCKET_NAME;
@@ -16,18 +18,31 @@ const ACTIVE_PLAYERS_FILE = 'active_players.jsonl';
 
 let playersCache = [];
 
+// Helper to convert stream to string
+const streamToString = async (stream) => {
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+};
+
 // Initialize the active_players.jsonl file and load players.jsonl into memory
 const initFiles = async () => {
   try {
-    await s3.headObject({ Bucket: BUCKET_NAME, Key: ACTIVE_PLAYERS_FILE }).promise();
+    await s3.send(new HeadObjectCommand({ Bucket: BUCKET_NAME, Key: ACTIVE_PLAYERS_FILE }));
   } catch (error) {
-    if (error.code === 'NotFound') {
-      await s3.putObject({
-        Bucket: BUCKET_NAME,
-        Key: ACTIVE_PLAYERS_FILE,
-        Body: '',
-        ContentType: 'application/jsonl'
-      }).promise();
+    if (error.name === 'NotFound') {
+      const upload = new Upload({
+        client: s3,
+        params: {
+          Bucket: BUCKET_NAME,
+          Key: ACTIVE_PLAYERS_FILE,
+          Body: '',
+          ContentType: 'application/jsonl'
+        }
+      });
+      await upload.done();
       console.log(`Created active players file: ${ACTIVE_PLAYERS_FILE}`);
     } else {
       console.error('Error checking active players file:', error);
@@ -37,8 +52,8 @@ const initFiles = async () => {
 
   // Load players.jsonl into memory
   try {
-    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: PLAYERS_JSONL_FILE }).promise();
-    const lines = data.Body.toString('utf-8').split('\n');
+    const data = await s3.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: PLAYERS_JSONL_FILE }));
+    const lines = (await streamToString(data.Body)).split('\n');
     playersCache = lines
       .filter(line => line.trim())
       .map(line => {
@@ -60,9 +75,9 @@ const initFiles = async () => {
 // Read all active players from the JSONL file in the bucket
 const getAllActivePlayers = async () => {
   try {
-    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: ACTIVE_PLAYERS_FILE }).promise();
+    const data = await s3.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: ACTIVE_PLAYERS_FILE }));
     const players = [];
-    const lines = data.Body.toString('utf-8').split('\n');
+    const lines = (await streamToString(data.Body)).split('\n');
 
     for (const line of lines) {
       if (!line.trim()) continue;
@@ -123,13 +138,17 @@ const savePlayer = async (player) => {
     }
 
     const content = activePlayers.map(p => JSON.stringify(p)).join('\n');
-    await s3.putObject({
-      Bucket: BUCKET_NAME,
-      Key: ACTIVE_PLAYERS_FILE,
-      Body: content,
-      ContentType: 'application/jsonl'
-    }).promise();
+    const upload = new Upload({
+      client: s3,
+      params: {
+        Bucket: BUCKET_NAME,
+        Key: ACTIVE_PLAYERS_FILE,
+        Body: content,
+        ContentType: 'application/jsonl'
+      }
+    });
 
+    await upload.done();
     return player;
   } catch (error) {
     console.error('Error saving player:', error);
@@ -146,16 +165,20 @@ const addPlayerToJSONL = async (playerData) => {
       email: playerData.email
     };
 
-    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: PLAYERS_JSONL_FILE }).promise();
-    const content = data.Body.toString('utf-8') + JSON.stringify(player) + '\n';
+    const data = await s3.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: PLAYERS_JSONL_FILE }));
+    const content = (await streamToString(data.Body)) + JSON.stringify(player) + '\n';
 
-    await s3.putObject({
-      Bucket: BUCKET_NAME,
-      Key: PLAYERS_JSONL_FILE,
-      Body: content,
-      ContentType: 'application/jsonl'
-    }).promise();
+    const upload = new Upload({
+      client: s3,
+      params: {
+        Bucket: BUCKET_NAME,
+        Key: PLAYERS_JSONL_FILE,
+        Body: content,
+        ContentType: 'application/jsonl'
+      }
+    });
 
+    await upload.done();
     return true;
   } catch (error) {
     console.error('Error adding player to JSONL:', error);

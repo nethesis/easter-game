@@ -1,13 +1,14 @@
-const AWS = require('aws-sdk');
-const path = require('path');
+const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 // S3 client configuration
-const s3 = new AWS.S3({
-  accessKeyId: process.env.DO_ACCESS_KEY,
-  secretAccessKey: process.env.DO_SECRET_KEY,
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: process.env.DO_ACCESS_KEY,
+    secretAccessKey: process.env.DO_SECRET_KEY
+  },
   endpoint: process.env.DO_ENDPOINT,
   region: process.env.DO_REGION,
-  s3ForcePathStyle: true
+  forcePathStyle: true
 });
 
 const BUCKET_NAME = process.env.DO_BUCKET_NAME;
@@ -16,8 +17,8 @@ const PRIZES_JSONL_FILE = 'prizes.jsonl';
 const calculatePrize = async () => {
   try {
     // Fetch prizes.jsonl from the bucket
-    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: PRIZES_JSONL_FILE }).promise();
-    const prizes = data.Body.toString('utf-8')
+    const data = await s3.send(new GetObjectCommand({ Bucket: BUCKET_NAME, Key: PRIZES_JSONL_FILE }));
+    const prizes = (await data.Body.transformToString())
       .split('\n')
       .filter(line => line.trim() !== '')
       .map(line => JSON.parse(line));
@@ -45,12 +46,12 @@ const calculatePrize = async () => {
 
           // Update the prizes.jsonl file in the bucket
           const updatedPrizes = prizes.map(p => (p.id === prize.id ? prize : p));
-          await s3.putObject({
+          await s3.send(new PutObjectCommand({
             Bucket: BUCKET_NAME,
             Key: PRIZES_JSONL_FILE,
             Body: updatedPrizes.map(p => JSON.stringify(p)).join('\n'),
             ContentType: 'application/jsonl'
-          }).promise();
+          }));
         }
 
         return prize;

@@ -14,7 +14,9 @@ const BUCKET_NAME = process.env.DO_BUCKET_NAME;
 const PLAYERS_JSONL_FILE = 'players.jsonl';
 const ACTIVE_PLAYERS_FILE = 'active_players.jsonl';
 
-// Initialize the active_players.jsonl file if it does not exist
+let playersCache = [];
+
+// Initialize the active_players.jsonl file and load players.jsonl into memory
 const initFiles = async () => {
   try {
     await s3.headObject({ Bucket: BUCKET_NAME, Key: ACTIVE_PLAYERS_FILE }).promise();
@@ -31,6 +33,27 @@ const initFiles = async () => {
       console.error('Error checking active players file:', error);
       throw error;
     }
+  }
+
+  // Load players.jsonl into memory
+  try {
+    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: PLAYERS_JSONL_FILE }).promise();
+    const lines = data.Body.toString('utf-8').split('\n');
+    playersCache = lines
+      .filter(line => line.trim())
+      .map(line => {
+        try {
+          return JSON.parse(line);
+        } catch (err) {
+          console.error('Error parsing players.jsonl line:', err);
+          return null;
+        }
+      })
+      .filter(player => player !== null);
+    console.log('Loaded players.jsonl into memory');
+  } catch (error) {
+    console.error('Error loading players.jsonl into memory:', error);
+    playersCache = [];
   }
 };
 
@@ -57,7 +80,7 @@ const getAllActivePlayers = async () => {
   }
 };
 
-// Find a player by VAT number using the JSONL files in the bucket
+// Find a player by VAT number using the cached players data
 const findPlayerByVatNumber = async (vatNumber) => {
   try {
     const activePlayers = await getAllActivePlayers();
@@ -67,27 +90,17 @@ const findPlayerByVatNumber = async (vatNumber) => {
       return activePlayer;
     }
 
-    const data = await s3.getObject({ Bucket: BUCKET_NAME, Key: PLAYERS_JSONL_FILE }).promise();
-    const lines = data.Body.toString('utf-8').split('\n');
-
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const player = JSON.parse(line);
-        if (player.piva === vatNumber) {
-          return {
-            vatNumber: player.piva,
-            name: player.partner.trim(),
-            email: player.email,
-            hasPlayed: false,
-            prize: null,
-            playedAt: null,
-            createdAt: new Date()
-          };
-        }
-      } catch (err) {
-        console.error('Error parsing JSONL line:', err);
-      }
+    const player = playersCache.find(player => player.piva === vatNumber);
+    if (player) {
+      return {
+        vatNumber: player.piva,
+        name: player.partner.trim(),
+        email: player.email,
+        hasPlayed: false,
+        prize: null,
+        playedAt: null,
+        createdAt: new Date()
+      };
     }
 
     return null;

@@ -2,9 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-const { sendWinnerEmail, sendCommercialEmail } = require('./public/js/email');
-const playerService = require('./public/js/players');
-const { calculatePrize } = require('./public/js/prizes');
+const { sendWinnerEmail, sendCommercialEmail } = require('./private/js/email');
+const playerService = require('./private/js/players');
+const { calculatePrize } = require('./private/js/prizes');
 
 // Initialize express app
 const app = express();
@@ -95,7 +95,7 @@ app.post('/api/record-game', async (req, res) => {
 });
 
 // Admin route to add authorized VAT numbers
-app.post('/api/admin/add-vat', async (req, res) => {
+app.post('/api/add-vat', async (req, res) => {
   const { vatNumber, name, email } = req.body;
   
   try {

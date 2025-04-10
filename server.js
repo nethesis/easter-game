@@ -93,8 +93,8 @@ app.post('/api/record-game', async (req, res) => {
 });
 
 // Route to calculate prize
-app.get('/api/calculate-prize', async (req, res) => {
-    const { vatNumber, playerName } = req.query;
+app.post('/api/calculate-prize', async (req, res) => {
+    const { vatNumber, playerName } = req.body;
 
     if (!vatNumber || !playerName) {
         return res.status(400).json({ success: false, message: 'Incomplete input data' });

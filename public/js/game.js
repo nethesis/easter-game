@@ -80,8 +80,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     eggDiv.classList.add('shaking');
 
-                    const prizeRequest = fetch(`/api/calculate-prize?vatNumber=${encodeURIComponent(currentVatNumber)}&playerName=${encodeURIComponent(currentPlayerName)}`)
-                        .then(response => response.json());
+                    const prizeRequest = fetch('/api/calculate-prize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            vatNumber: currentVatNumber,
+                            playerName: currentPlayerName
+                        })
+                    }).then(response => response.json());
 
                     setTimeout(async () => {
                         eggImg.src = 'images/egg_opened.svg';
@@ -136,9 +144,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             
             if (!response.ok) {
-                showError(data.error === 'VAT Number not authorized to play.' ? 
+                showError(data.error === 'VAT Number not authorized to play' ? 
                           'Errore! Partita Iva inesistente' : 
-                          data.error === 'You have already played with this VAT Number.' ? 
+                          data.error === 'You have already played with this VAT Number' ? 
                           'Errore! Partita Iva già utilizzata' : 
                           'Errore nella verifica della Partita IVA');
                 return;
@@ -213,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 })
             }).then(response => response.json())
               .then(data => {
-                  if (!response.ok) {
+                  if (!data.success) {
                       console.error('Errore nella registrazione del gioco:', data.error);
                   }
               })

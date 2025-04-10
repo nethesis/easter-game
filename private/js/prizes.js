@@ -18,23 +18,6 @@ const s3 = new S3Client({
 const BUCKET_NAME = process.env.DO_BUCKET_NAME;
 const PRIZES_JSONL_FILE = "data/prizes.jsonl";
 
-const getPrizes = async () => {
-  try {
-    // Fetch prizes.jsonl from the bucket
-    const data = await s3.send(
-      new GetObjectCommand({ Bucket: BUCKET_NAME, Key: PRIZES_JSONL_FILE })
-    );
-    const prizes = (await data.Body.transformToString())
-      .split("\n")
-      .filter((line) => line.trim() !== "")
-      .map((line) => JSON.parse(line));
-    return prizes;
-  } catch (error) {
-    console.error("Error accessing prizes.jsonl:", error);
-    throw error;
-  }
-};
-
 const calculatePrize = async () => {
   try {
     // Fetch prizes.jsonl from the bucket
@@ -98,4 +81,4 @@ const calculatePrize = async () => {
   }
 };
 
-module.exports = { calculatePrize, getPrizes };
+module.exports = { calculatePrize };

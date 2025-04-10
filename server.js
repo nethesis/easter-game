@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const { sendWinnerEmail, sendCommercialEmail } = require('./private/js/email');
 const playerService = require('./private/js/players');
-const { calculatePrize, getPrizes } = require('./private/js/prizes');
+const { calculatePrize } = require('./private/js/prizes');
 
 // Initialize express app
 const app = express();

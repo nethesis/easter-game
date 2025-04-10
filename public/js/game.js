@@ -186,7 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         eggElement.style.transform = 'scale(1.2)';
         eggElement.classList.add('opening');
 
-        setTimeout(() => {
+        setTimeout(async () => {
             // Update UI for result immediately
             prizeNameSpan.textContent = prize;
 
@@ -198,36 +198,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             const prizeRevealElement = document.querySelector('.prize-reveal');
             prizeRevealElement.appendChild(deliveryInfoElement);
 
-            // Show confetti
-            startConfetti();
+            // Show egg_opened.svg and wait 2 seconds before showing the loading overlay
+            setTimeout(() => {
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.id = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="spinner"></div>
+                    <p>Caricamento in corso...</p>
+                `;
+                document.body.appendChild(loadingOverlay);
 
-            // Show result section
-            gameSection.classList.remove('active-section');
-            gameSection.classList.add('hidden-section');
-            resultSection.classList.remove('hidden-section');
-            resultSection.classList.add('active-section');
+                // Record game result in the background
+                fetch('/api/record-game', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        vatNumber: currentVatNumber,
+                        prize: prize,
+                        playerName: currentPlayerName,
+                        playerEmail: playerEmailInput.value.trim()
+                    })
+                }).then(response => {
+                    if (!response.ok) {
+                        throw new Error('Errore nella registrazione del gioco');
+                    }
 
-            // Record game result in the background
-            fetch('/api/record-game', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    vatNumber: currentVatNumber,
-                    prize: prize,
-                    playerName: currentPlayerName,
-                    playerEmail: playerEmailInput.value.trim()
-                })
-            }).then(response => response.json())
-              .then(data => {
-                  if (!data.success) {
-                      console.error('Errore nella registrazione del gioco:', data.error);
-                  }
-              })
-              .catch(error => {
-                  console.error('Errore di connessione durante la registrazione del gioco:', error);
-              });
+                    // Show confetti
+                    startConfetti();
+
+                    // Show result section
+                    gameSection.classList.remove('active-section');
+                    gameSection.classList.add('hidden-section');
+                    resultSection.classList.remove('hidden-section');
+                    resultSection.classList.add('active-section');
+                }).catch(error => {
+                    console.error('Errore di connessione durante la registrazione del gioco:', error);
+                    showError('Si è verificato un errore. Riprova più tardi.');
+                }).finally(() => {
+                    // Remove loading overlay
+                    document.body.removeChild(loadingOverlay);
+                });
+            }, 2000); // 2-second delay before showing the loading overlay
         }, 1000);
     }
     

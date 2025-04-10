@@ -18,8 +18,8 @@ const s3 = new S3Client({
 });
 
 const BUCKET_NAME = process.env.DO_BUCKET_NAME;
-const PLAYERS_JSONL_FILE = "players.jsonl";
-const ACTIVE_PLAYERS_FOLDER = "active_players/";
+const PLAYERS_JSONL_FILE = "data/players.jsonl";
+const ACTIVE_PLAYERS_FOLDER = "data/active_players/";
 
 let playersCache = [];
 

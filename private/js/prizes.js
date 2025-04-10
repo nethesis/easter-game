@@ -16,7 +16,7 @@ const s3 = new S3Client({
 });
 
 const BUCKET_NAME = process.env.DO_BUCKET_NAME;
-const PRIZES_JSONL_FILE = "prizes.jsonl";
+const PRIZES_JSONL_FILE = "data/prizes.jsonl";
 
 const getPrizes = async () => {
   try {

@@ -38,7 +38,7 @@ app.post('/api/validate-vat', async (req, res) => {
       return res.status(403).json({ error: 'You have already played with this VAT Number' });
     }
     
-    return res.json({ success: true, playerName: player.name });
+    return res.json({ playerName: player.name });
   } catch (error) {
     console.error('Error validating VAT number', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -85,7 +85,7 @@ app.post('/api/record-game', async (req, res) => {
     await sendWinnerEmail(player.email || playerEmail, playerName, prize);
     await sendCommercialEmail(vatNumber, playerName, prize, playerEmail);
 
-    return res.json({ success: true });
+    return res.json({});
   } catch (error) {
     console.error('Error recording game', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -97,30 +97,30 @@ app.post('/api/calculate-prize', async (req, res) => {
     const { vatNumber, playerName } = req.body;
 
     if (!vatNumber || !playerName) {
-        return res.status(400).json({ success: false, message: 'Incomplete input data' });
+        return res.status(400).json({ message: 'Incomplete input data' });
     }
 
     try {
         const player = await playerService.findPlayerByVatNumber(vatNumber);
 
         if (!player || player.name !== playerName) {
-            return res.status(403).json({ success: false, message: 'Invalid input data' });
+            return res.status(403).json({ message: 'Invalid input data' });
         }
 
         if (player.hasPlayed) {
-            return res.status(403).json({ success: false, message: 'You have already played' });
+            return res.status(403).json({ message: 'You have already played' });
         }
 
         const prize = await calculatePrize();
 
         if (prize) {
-            res.json({ success: true, prize: prize.name });
+            res.json({ prize: prize.name });
         } else {
-            res.status(404).json({ success: false, message: 'No prize available' });
+            res.status(404).json({ message: 'No prize available' });
         }
     } catch (error) {
         console.error('Error calculating prize:', error);
-        res.status(500).json({ success: false, message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 

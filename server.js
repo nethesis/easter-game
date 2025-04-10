@@ -46,22 +46,19 @@ app.post('/api/validate-vat', async (req, res) => {
 });
 
 // Route to record game result
-app.post('/api/record-game', async (req, res) => {
-  const { vatNumber, prize, playerName, playerEmail } = req.body;
+app.post('/api/record-prize', async (req, res) => {
+  const { vatNumber, playerName, playerEmail } = req.body;
 
   // Validate input fields
-  if (!vatNumber || !prize || !playerName || !playerEmail) {
+  if (!vatNumber || !playerName || !playerEmail) {
     return res.status(400).json({ error: 'Incomplete input data' });
   }
 
   try {
     const player = await playerService.findPlayerByVatNumber(vatNumber);
+    const prize = await calculatePrize();
 
-  // Validate prize
-    const validPrizes = await getPrizes();
-    const prizeExists = validPrizes.find(p => p.name === prize);
-
-    if (!player || player.name !== playerName || !prizeExists) {
+    if (!player || player.name !== playerName) {
       return res.status(404).json({ error: 'Invalid input data' });
     }
 
@@ -69,7 +66,7 @@ app.post('/api/record-game', async (req, res) => {
       return res.status(403).json({ error: 'You have already played' });
     }
 
-  // Update player record
+    // Update player record
     player.hasPlayed = true;
     player.prize = prize;
     player.playedAt = new Date();
@@ -78,50 +75,18 @@ app.post('/api/record-game', async (req, res) => {
       player.email = playerEmail;
     }
 
-// Save player
+    // Save player
     await playerService.savePlayer(player);
 
-// Send emails
+    // Send emails
     await sendWinnerEmail(player.email || playerEmail, playerName, prize);
     await sendCommercialEmail(vatNumber, playerName, prize, playerEmail);
 
-    return res.json({});
+    return res.json({ prize: prize });
   } catch (error) {
     console.error('Error recording game', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-});
-
-// Route to calculate prize
-app.post('/api/calculate-prize', async (req, res) => {
-    const { vatNumber, playerName } = req.body;
-
-    if (!vatNumber || !playerName) {
-        return res.status(400).json({ message: 'Incomplete input data' });
-    }
-
-    try {
-        const player = await playerService.findPlayerByVatNumber(vatNumber);
-
-        if (!player || player.name !== playerName) {
-            return res.status(403).json({ message: 'Invalid input data' });
-        }
-
-        if (player.hasPlayed) {
-            return res.status(403).json({ message: 'You have already played' });
-        }
-
-        const prize = await calculatePrize();
-
-        if (prize) {
-            res.json({ prize: prize.name });
-        } else {
-            res.status(404).json({ message: 'No prize available' });
-        }
-    } catch (error) {
-        console.error('Error calculating prize:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
 });
 
 // Start server

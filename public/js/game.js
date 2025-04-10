@@ -80,38 +80,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try {
                     eggDiv.classList.add('shaking');
 
-                    const prizeRequest = fetch('/api/calculate-prize', {
+                    // Start the record-game request immediately after prize calculation
+                    const recordGameRequest = await fetch('/api/record-prize', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
                             vatNumber: currentVatNumber,
-                            playerName: currentPlayerName
+                            playerName: currentPlayerName,
+                            playerEmail: playerEmailInput.value.trim()
                         })
-                    }).then(response => response.json());
+                    });
+                    
+                    eggDiv.classList.remove('shaking');
+                    eggImg.src = 'images/egg_opened.svg';
 
-                    setTimeout(async () => {
-                        eggImg.src = 'images/egg_opened.svg';
+                    const prize = recordGameRequest.prize;
 
-                        try {
-                            const data = await prizeRequest;
+                    // Handle the egg selection UI
+                    await selectEgg(eggDiv, prize);
 
-                            if (!data || !data.prize) {
-                                showError(data.message || 'Errore nel calcolo del regalo');
-                                eggImg.src = 'images/egg_closed.svg';
-                                return;
-                            }
-
-                            const prize = data.prize;
-
-                            await selectEgg(eggDiv, prize);
-                        } catch (error) {
-                            console.error('Errore nella richiesta del regalo:', error);
-                            showError('Si è verificato un errore. Riprova più tardi.');
-                            eggImg.src = 'images/egg_closed.svg';
+                    // Wait for the record-game request to complete
+                    try {
+                        const recordResponse = await recordGameRequest;
+                        if (!recordResponse.ok) {
+                            throw new Error('Errore nella registrazione del gioco');
                         }
-                    }, 1200);
+                    } catch (error) {
+                        console.error('Errore di connessione durante la registrazione del gioco:', error);
+                        showError('Si è verificato un errore. Riprova più tardi.');
+                    }
                 } catch (error) {
                     console.error('Errore nella richiesta del regalo:', error);
                     showError('Si è verificato un errore. Riprova più tardi.');
@@ -198,50 +197,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const prizeRevealElement = document.querySelector('.prize-reveal');
             prizeRevealElement.appendChild(deliveryInfoElement);
 
-            // Show egg_opened.svg and wait 2 seconds before showing the loading overlay
-            setTimeout(() => {
-                const loadingOverlay = document.createElement('div');
-                loadingOverlay.id = 'loading-overlay';
-                loadingOverlay.innerHTML = `
-                    <div class="spinner"></div>
-                    <p>Caricamento in corso...</p>
-                `;
-                document.body.appendChild(loadingOverlay);
+            // Show confetti
+            startConfetti();
 
-                // Record game result in the background
-                fetch('/api/record-game', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        vatNumber: currentVatNumber,
-                        prize: prize,
-                        playerName: currentPlayerName,
-                        playerEmail: playerEmailInput.value.trim()
-                    })
-                }).then(response => {
-                    if (!response.ok) {
-                        throw new Error('Errore nella registrazione del gioco');
-                    }
-
-                    // Show confetti
-                    startConfetti();
-
-                    // Show result section
-                    gameSection.classList.remove('active-section');
-                    gameSection.classList.add('hidden-section');
-                    resultSection.classList.remove('hidden-section');
-                    resultSection.classList.add('active-section');
-                }).catch(error => {
-                    console.error('Errore di connessione durante la registrazione del gioco:', error);
-                    showError('Si è verificato un errore. Riprova più tardi.');
-                }).finally(() => {
-                    // Remove loading overlay
-                    document.body.removeChild(loadingOverlay);
-                });
-            }, 2000); // 2-second delay before showing the loading overlay
-        }, 1000);
+            // Show result section
+            gameSection.classList.remove('active-section');
+            gameSection.classList.add('hidden-section');
+            resultSection.classList.remove('hidden-section');
+            resultSection.classList.add('active-section');
+        }, 2000);
     }
     
     function showError(message) {

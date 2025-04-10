@@ -57,7 +57,7 @@ app.post('/api/record-game', async (req, res) => {
   try {
     const player = await playerService.findPlayerByVatNumber(vatNumber);
 
-    // Validate prize
+  // Validate prize
     const validPrizes = await getPrizes();
     const prizeExists = validPrizes.find(p => p.name === prize);
 
@@ -69,7 +69,7 @@ app.post('/api/record-game', async (req, res) => {
       return res.status(403).json({ error: 'You have already played' });
     }
 
-    // Update player record
+  // Update player record
     player.hasPlayed = true;
     player.prize = prize;
     player.playedAt = new Date();
@@ -78,10 +78,10 @@ app.post('/api/record-game', async (req, res) => {
       player.email = playerEmail;
     }
 
-    // Save player
+// Save player
     await playerService.savePlayer(player);
 
-    // Send emails
+// Send emails
     await sendWinnerEmail(player.email || playerEmail, playerName, prize);
     await sendCommercialEmail(vatNumber, playerName, prize, playerEmail);
 
@@ -129,7 +129,7 @@ app.listen(PORT, () => {
   console.log('========================================');
   console.log('Application logs start here');
   console.log('========================================');
-  console.log('')
+  console.log('');
   console.log(`Server running on port ${PORT}`);
-  console.log('')
+  console.log('');
 });
